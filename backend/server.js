@@ -1,5 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const path = require("path");
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
@@ -10,10 +11,25 @@ connectDB();
 
 const app = express();
 app.use(express.json())// to accept json data
-app.get("/", (req, res) => { res.send("Api is running") })
 app.use('/api/user', userRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/message', messageRoutes);
+
+// --------------------------deployment------------------------------
+const __dirname1 = path.resolve();
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname1, "/frontend/build")));
+
+  app.get("*", (req, res) =>
+    res.sendFile(path.resolve(__dirname1, "frontend", "build", "index.html"))
+  );
+} else {
+  app.get("/", (req, res) => {
+    res.send("API is running..");
+  });
+}
+// --------------------------deployment------------------------------
 
 // err handlers
 app.use(notFound)
@@ -29,7 +45,7 @@ const server = app.listen(
 const io = require("socket.io")(server, {
     pingTimeout: 60000,
     cors: {
-        origin: "http://localhost:3000",
+        origin: "*", // Allow all origins for production
         // credentials: true,
     },
 });
